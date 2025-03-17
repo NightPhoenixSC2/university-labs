@@ -3,6 +3,7 @@ import random
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
+import math
 
 pygame.init()
 display = (800, 600)
@@ -62,19 +63,18 @@ def main():
               ([0.0, -0.1], [-0.1, -0.2]), ([-0.2, -0.1], [-0.2, -0.3]), ([-0.2, -0.3], [-0.3, -0.4]),
               ([-0.2, -0.3], [0.4, -0.3])]
 
-    A = (20, 300)
-    B = (400, 75)
-    C = (770, 300)
-    D = (400, 570)
-    path = [A, B, C, D]
-
-    current_index = 0
-    next_index = 1
-    t = 0
-    speed = 0.007
-
     clvis = random_color()
     clunvis = random_color()
+
+    h, k = 400, 300
+    a, b = 300, 200
+
+    # Розміри
+    min_size = 50
+    max_size = 200
+
+    t = math.pi
+    dt = 0.01
 
     while True:
         for event in pygame.event.get():
@@ -82,22 +82,11 @@ def main():
                 pygame.quit()
                 quit()
 
-        current_pos = path[current_index]
-        next_pos = path[next_index]
+        x0 = h + a * math.cos(t)
+        y0 = k + b * math.sin(t)
 
-        x0 = (1 - t) * current_pos[0] + t * next_pos[0]
-        y0 = (1 - t) * current_pos[1] + t * next_pos[1]
+        m = max_size - (max_size - min_size) * ((y0 - (k - b)) / (2 * b))
 
-        if current_pos == A and next_pos == B:
-            m = 100 + t * 100   # A(100) -> B(200)
-        elif current_pos == B and next_pos == C:
-            m = 200 - t * 100   # B(200) -> C(100)
-        elif current_pos == C and next_pos == D:
-            m = 100 - t * 50    # C(100) -> D(50)
-        elif current_pos == D and next_pos == A:
-            m = 50 + t * 50     # D(50) -> A(100)
-        else:
-            m = 100
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         draw_figure(x0, y0, m, clvis, clunvis, visible, hidden)
@@ -105,11 +94,10 @@ def main():
         pygame.display.flip()
         pygame.time.wait(10)
 
-        t += speed
-        if t >= 1:
-            t = 0
-            current_index = next_index
-            next_index = (next_index + 1) % len(path)
+        t += dt
+        if t > 2 * math.pi:
+            t -= 2 * math.pi
+
 
 if __name__ == "__main__":
     main()

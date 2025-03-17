@@ -69,7 +69,7 @@ def main():
               ([-0.2, -0.3], [0.4, -0.3])]
 
     x0, y0 = 0, 600
-    m = 100
+    m = 3
     clvis = random_color()
     clunvis = random_color()
     speed_x, speed_y = 3, -2.3
@@ -91,11 +91,11 @@ def main():
 
         center_x, center_y = display[0] / 2, display[1] / 2
         distance = ((x0 - center_x) ** 2 + (y0 - center_y) ** 2) ** 0.5
-        m = max(50, 300 - distance / 2)
+        m += 2
 
-        if x0 > display[0] or y0 < 0:
+        if x0 > 580 or y0 < 0:
             x0, y0 = 0, 600
-            m = 100
+            m = 3
 
 
 if __name__ == "__main__":
