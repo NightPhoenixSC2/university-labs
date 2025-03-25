@@ -1,12 +1,13 @@
 import pygame
+import numpy as np
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-import numpy as np
-import cv2
-from flask import Flask, Response
+from flask import Flask, send_file
+from io import BytesIO
 
-# Фігура
+app = Flask(__name__)
+
 vertices = [
     (2, 1, -0.5),
     (2, -1, -0.5),
@@ -36,22 +37,6 @@ colors = [
     (0, 1, 1),  # Блакитний
 ]
 
-edges = [
-    (0, 1),
-    (1, 2),
-    (2, 3),
-    (3, 0),
-    (4, 5),
-    (5, 6),
-    (6, 7),
-    (7, 4),
-    (0, 4),
-    (1, 5),
-    (2, 6),
-    (3, 7)
-]
-
-# Функція малювання граней
 def draw_faces():
     glBegin(GL_QUADS)
     for i, face in enumerate(faces):
@@ -60,65 +45,49 @@ def draw_faces():
             glVertex3fv(vertices[vertex])
     glEnd()
 
-# Функція малювання ребер
 def draw_edges():
-    glColor3f(0, 0, 0)  # Чорні ребра
+    glColor3f(0, 0, 0)  # чорні ребра
     glBegin(GL_LINES)
-    for edge in edges:
+    for edge in [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]:
         for vertex in edge:
             glVertex3fv(vertices[vertex])
     glEnd()
 
-# Налаштування Pygame та OpenGL
-pygame.init()
-display = (800, 600)
-pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
-gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
-glTranslatef(0.0, 0.0, -10)
+def capture_screen():
+    # Отримуємо поточний кадр в буфер
+    width, height = 800, 600
+    glReadBuffer(GL_FRONT)
+    raw_data = glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE)
+    
+    # Перетворюємо дані в зображення
+    image = np.frombuffer(raw_data, dtype=np.uint8).reshape((height, width, 3))
+    image = np.flipud(image)  # Перевертаємо по вертикалі, бо OpenGL зчитує знизу вгору
+    
+    return image
 
-glEnable(GL_DEPTH_TEST)
+@app.route('/')
+def render_cube():
+    # Ініціалізація Pygame і OpenGL
+    pygame.display.set_mode((800, 600), DOUBLEBUF | OPENGL)
+    gluPerspective(45, (800 / 600), 0.1, 50.0)
+    glTranslatef(0.0, 0.0, -10)
+    glEnable(GL_DEPTH_TEST)
 
-# Flask додаток
-app = Flask(__name__)
+    # Очищаємо екран і рендеримо куб
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    draw_faces()
+    draw_edges()
 
-# Відео потік для Flask
-def generate_frames():
-    angle = 0
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+    # Захоплюємо екран у вигляді зображення
+    image = capture_screen()
 
-        # Очищення екрану
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    # Перетворюємо в зображення у форматі PNG
+    buffer = BytesIO()
+    pygame.image.save(pygame.surfarray.make_surface(image), buffer)
+    buffer.seek(0)
 
-        # Обертання та малювання фігури
-        glPushMatrix()
-        glRotatef(angle, 1, 0, 0)  # обертання по осі X
-        draw_faces()
-        draw_edges()
-        glPopMatrix()
+    # Повертаємо зображення через Flask
+    return send_file(buffer, mimetype='image/png')
 
-        pygame.display.flip()
-        pygame.time.wait(10)
-        angle += 1
-
-        # Захоплення кадру
-        pixels = glReadPixels(0, 0, display[0], display[1], GL_RGB, GL_UNSIGNED_BYTE)
-        frame = np.frombuffer(pixels, dtype=np.uint8).reshape(display[1], display[0], 3)
-        frame = cv2.flip(frame, 0)  # Виправлення орієнтації
-
-        # Перетворення у формат MJPEG
-        _, buffer = cv2.imencode('.jpg', frame)
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n\r\n')
-
-# Маршрут для відео потоку
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# Запуск Flask серверу
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)
