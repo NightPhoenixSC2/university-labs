@@ -5,7 +5,8 @@ from OpenGL.GLU import *
 
 scale = [0.2, 0.2, 0.2]  # Масштабні коефіцієнти [X, Y, Z]
 translation_coefficient = (0.25, 0.25, -2.0)  # Коефіцієнт зміщення (x, y, z)
-rotation_angle = 0  # Кут обертання
+rotation_angle = 20  # кут обертання
+rotation_axis = [1, 1, 1]  # Вісь обертання (X, Y, Z)
 
 vertices = [
     (2, 1, -0.5),
@@ -19,21 +20,21 @@ vertices = [
 ]
 
 faces = [
-    (0, 1, 2, 3),  # Задня
-    (4, 5, 6, 7),  # Передня
-    (0, 4, 5, 1),  # Права
-    (3, 7, 6, 2),  # Ліва
-    (0, 4, 7, 3),  # Верхня
-    (1, 5, 6, 2)  # Нижня
+    (0, 1, 2, 3),
+    (4, 5, 6, 7),
+    (0, 4, 5, 1),
+    (3, 7, 6, 2),
+    (0, 4, 7, 3),
+    (1, 5, 6, 2)
 ]
 
 colors = [
-    (1, 0, 0),  # Червоний
-    (0, 1, 0),  # Зелений
-    (0, 0, 1),  # Синій
-    (1, 1, 0),  # Жовтий
-    (1, 0, 1),  # Фіолетовий
-    (0, 1, 1),  # Блакитний
+    (1, 0, 0),
+    (0, 1, 0),
+    (0, 0, 1),
+    (1, 1, 0),
+    (1, 0, 1),
+    (0, 1, 1),
 ]
 
 edges = [
@@ -62,7 +63,6 @@ def draw_edges():
 
 
 def main():
-    global rotation_angle
     pygame.init()
     display = (800, 600)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
@@ -79,15 +79,14 @@ def main():
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glPushMatrix()  # Збереження поточної матриці перетворень
-        glScalef(*scale)  # матриця масштабування
-        glRotatef(rotation_angle, 1, 1, 1)  # матриця обертання
+        glScalef(*scale)  # Використання матриці масштабування
+        glRotatef(rotation_angle, *rotation_axis)  # Фіксований кут обертання
         draw_faces()
         draw_edges()
         glPopMatrix()  # Відновлення матриці після перетворень
 
         pygame.display.flip()
         pygame.time.wait(10)
-        rotation_angle += 1  # Збільшення кута обертання
 
 
 if __name__ == "__main__":
