@@ -3,10 +3,12 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
-scale = [0.2, 0.2, 0.2]  # Масштабні коефіцієнти [X, Y, Z]
-translation_coefficient = (0.25, 0.25, -2.0)  # Коефіцієнт зміщення (x, y, z)
-rotation_angle = 20  # кут обертання
-rotation_axis = [1, 1, 1]  # Вісь обертання (X, Y, Z)
+scale = [0.2, 0.2, 0.2]
+base_translation = [0.25, 0.25, -2.0]
+rotation_angle = 20
+rotation_axis = [1, 1, 1]
+
+direction_mask = (1, 1, 0)
 
 vertices = [
     (2, 1, -0.5),
@@ -44,6 +46,10 @@ edges = [
 ]
 
 
+def apply_directional_translation(base, mask):
+    return [(-base[i] if mask[i] else base[i]) for i in range(3)]
+
+
 def draw_faces():
     glBegin(GL_QUADS)
     for i, face in enumerate(faces):
@@ -54,7 +60,7 @@ def draw_faces():
 
 
 def draw_edges():
-    glColor3f(0, 0, 0)  # чорні ребра
+    glColor3f(0, 0, 0)
     glBegin(GL_LINES)
     for edge in edges:
         for vertex in edge:
@@ -66,9 +72,10 @@ def main():
     pygame.init()
     display = (800, 600)
     pygame.display.set_mode(display, DOUBLEBUF | OPENGL)
-    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)  # Задання матриці проєкції
+    gluPerspective(45, (display[0] / display[1]), 0.1, 50.0)
 
-    glTranslatef(*translation_coefficient)  # Використання матриці перенесення (зсуву)
+    translation = apply_directional_translation(base_translation, direction_mask)
+    glTranslatef(*translation)
     glEnable(GL_DEPTH_TEST)
 
     while True:
@@ -78,12 +85,12 @@ def main():
                 quit()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glPushMatrix()  # Збереження поточної матриці перетворень
-        glScalef(*scale)  # Використання матриці масштабування
-        glRotatef(rotation_angle, *rotation_axis)  # Фіксований кут обертання
+        glPushMatrix()
+        glScalef(*scale)
+        glRotatef(rotation_angle, *rotation_axis)
         draw_faces()
         draw_edges()
-        glPopMatrix()  # Відновлення матриці після перетворень
+        glPopMatrix()
 
         pygame.display.flip()
         pygame.time.wait(10)
